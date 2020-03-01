@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: github-actions-exporter
+spec:
+  template:
+    spec:
+      containers:
+        - name: github-actions-exporter
+          image: github-actions-exporter
+          imagePullPolicy: Never
+          args:
+            - server
+            - --api-address=0.0.0.0:8000
+            - --monitor-address=0.0.0.0:9090
+            - --enable-tracing
+            - --repository=kaidotdev/github-actions-exporter
+            - --token=dummy

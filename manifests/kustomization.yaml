@@ -1,0 +1,6 @@
+namespace: default
+
+resources:
+  - pod_disruption_budget.yaml
+  - service.yaml
+  - stateful_set.yaml

@@ -1,0 +1,10 @@
+namespace: github-actions-exporter
+
+bases:
+  - ../manifests
+
+resources:
+  - namespace.yaml
+
+patchesStrategicMerge:
+  - stateful_set.yaml
