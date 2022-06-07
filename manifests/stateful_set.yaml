@@ -42,7 +42,7 @@ spec:
               weight: 100
       containers:
         - name: github-actions-exporter
-          image: ghcr.io/kaidotdev/github-actions-exporter:v0.1.1
+          image: ghcr.io/kaidotdev/github-actions-exporter:v0.1.2
           imagePullPolicy: Always
           args:
             - server
