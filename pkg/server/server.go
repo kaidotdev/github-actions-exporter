@@ -31,19 +31,20 @@ func Run(a *Args) error {
 	i.AddProcessor(api)
 
 	monitor, err := processor.NewMonitor(processor.MonitorSettings{
-		Address:              a.MonitorAddress,
-		MaxConnections:       a.MonitorMaxConnections,
-		JaegerEndpoint:       a.MonitoringJaegerEndpoint,
-		EnableProfiling:      a.EnableProfiling,
-		EnableTracing:        a.EnableTracing,
-		TracingSampleRate:    a.TracingSampleRate,
-		ReUsePort:            a.ReUsePort,
-		KeepAlived:           a.KeepAlived,
-		TCPKeepAliveInterval: time.Duration(a.TCPKeepAliveInterval) * time.Second,
-		HTTPClient:           i.HTTPClient(),
-		Logger:               i.Logger(),
-		Repository:           a.Repository,
-		Token:                a.Token,
+		Address:               a.MonitorAddress,
+		MaxConnections:        a.MonitorMaxConnections,
+		JaegerEndpoint:        a.MonitoringJaegerEndpoint,
+		EnableProfiling:       a.EnableProfiling,
+		EnableTracing:         a.EnableTracing,
+		TracingSampleRate:     a.TracingSampleRate,
+		ReUsePort:             a.ReUsePort,
+		KeepAlived:            a.KeepAlived,
+		TCPKeepAliveInterval:  time.Duration(a.TCPKeepAliveInterval) * time.Second,
+		CollectorLoopInterval: time.Duration(a.CollectorLoopInterval) * time.Second,
+		HTTPClient:            i.HTTPClient(),
+		Logger:                i.Logger(),
+		Repository:            a.Repository,
+		Token:                 a.Token,
 	})
 	if err != nil {
 		return xerrors.Errorf("failed to create monitor: %w", err)

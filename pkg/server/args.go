@@ -16,6 +16,7 @@ type Args struct {
 	TCPKeepAliveInterval     int64
 	Verbose                  bool
 	Repository               string
+	CollectorLoopInterval    int64
 	Token                    string
 }
 
@@ -32,6 +33,7 @@ func DefaultArgs() *Args {
 		KeepAlived:               true,
 		ReUsePort:                false,
 		TCPKeepAliveInterval:     0,
+		CollectorLoopInterval:    60,
 		Verbose:                  true,
 	}
 }

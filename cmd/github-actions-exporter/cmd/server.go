@@ -16,7 +16,7 @@ func serverCmd() *cobra.Command {
 
 	serverCmd := &cobra.Command{
 		Use:          "server",
-		Short:        "Starts KubeOutdatedImageExporter as a server",
+		Short:        "Starts GitHubActionsExporter as a server",
 		SilenceUsage: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {

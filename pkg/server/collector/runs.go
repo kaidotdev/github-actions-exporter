@@ -1,10 +1,12 @@
 package collector
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"golang.org/x/xerrors"
 
@@ -95,6 +97,22 @@ func (c *RunsCollector) scrapeRuns() {
 	}
 }
 
+func (c *RunsCollector) StartLoop(ctx context.Context, interval time.Duration) {
+	go func(ctx context.Context) {
+		c.scrapeRuns()
+		t := time.NewTicker(interval)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				c.scrapeRuns()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}(ctx)
+}
+
 func (c *RunsCollector) collectors() []prometheus.Collector {
 	return []prometheus.Collector{
 		c.runs,
@@ -108,8 +126,6 @@ func (c *RunsCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *RunsCollector) Collect(ch chan<- prometheus.Metric) {
-	c.scrapeRuns()
-
 	for _, collector := range c.collectors() {
 		collector.Collect(ch)
 	}

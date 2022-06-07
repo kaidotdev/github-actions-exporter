@@ -1,10 +1,12 @@
 package collector
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"golang.org/x/xerrors"
 
@@ -13,15 +15,23 @@ import (
 
 var (
 	runnerStatuses = []string{
-		"queued",
-		"in_progress",
-		"completed",
+		"offline",
+		"online",
 	}
+	runnersPerPage = 100
 )
 
-type WorkflowRunnersResponse struct {
-	TotalCount   int               `json:"total_count"`
-	WorkflowRuns []json.RawMessage `json:"workflow_runs"`
+type Runner struct {
+	ID     uint64 `json:"id"`
+	Name   string `json:"name"`
+	OS     string `json:"os"`
+	Status string `json:"status"`
+	Busy   bool   `json:"busy"`
+}
+
+type RunnersResponse struct {
+	TotalCount int      `json:"total_count"`
+	Runners    []Runner `json:"runners"`
 }
 
 type RunnersCollector struct {
@@ -51,44 +61,73 @@ func NewRunnersCollector(
 	}
 }
 
-func (c *RunnersCollector) fetchRunnersCount(status string) (int, error) {
-	request, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/runners?status=%s", c.repository, status), nil)
+func (c *RunnersCollector) fetchRunners(page int) ([]Runner, error) {
+	fmt.Printf("page: %d\n", page)
+	request, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/runners?per_page=%d&page=%d", c.repository, runnersPerPage, page), nil)
 	if err != nil {
-		return 0, xerrors.Errorf("failed to create request object: %w", err)
+		return nil, xerrors.Errorf("failed to create request object: %w", err)
 	}
 	request.Header.Set("Authorization", fmt.Sprintf("token %s", c.token))
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		return 0, xerrors.Errorf("failed to request: %w", err)
+		return nil, xerrors.Errorf("failed to request: %w", err)
 	}
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return 0, xerrors.Errorf("failed to read response: %w", err)
+		return nil, xerrors.Errorf("failed to read response: %w", err)
 	}
 
-	var workflowRunsResponse WorkflowRunnersResponse
-	if err := json.Unmarshal(body, &workflowRunsResponse); err != nil {
-		return 0, xerrors.Errorf("failed to parse response: %w", err)
+	var runnersResponse RunnersResponse
+	if err := json.Unmarshal(body, &runnersResponse); err != nil {
+		return nil, xerrors.Errorf("failed to parse response: %w", err)
 	}
 
-	return workflowRunsResponse.TotalCount, nil
+	if runnersResponse.TotalCount > runnersPerPage*page {
+		runners, err := c.fetchRunners(page + 1)
+		if err != nil {
+			return nil, xerrors.Errorf("failed to execute fetchRunners: %w", err)
+		}
+		runnersResponse.Runners = append(runnersResponse.Runners, runners...)
+	}
+
+	return runnersResponse.Runners, nil
 }
 
 func (c *RunnersCollector) scrapeRunners() {
+	runners, err := c.fetchRunners(1)
+	if err != nil {
+		c.logger.Errorf("Failed to fetch runners count: %s\n", err.Error())
+		return
+	}
+	m := make(map[string][]Runner)
+	for _, runner := range runners {
+		m[runner.Status] = append(m[runner.Status], runner)
+	}
 	for _, status := range runnerStatuses {
-		count, err := c.fetchRunnersCount(status)
-		if err != nil {
-			c.logger.Errorf("Failed to fetch runners count: %s\n", err.Error())
-			return
-		}
 		labels := []string{
 			c.repository,
 			status,
 		}
-		c.runners.WithLabelValues(labels...).Set(float64(count))
+		c.runners.WithLabelValues(labels...).Set(float64(len(m[status])))
 	}
+}
+
+func (c *RunnersCollector) StartLoop(ctx context.Context, interval time.Duration) {
+	go func(ctx context.Context) {
+		c.scrapeRunners()
+		t := time.NewTicker(interval)
+		defer t.Stop()
+		for {
+			select {
+			case <-t.C:
+				c.scrapeRunners()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}(ctx)
 }
 
 func (c *RunnersCollector) collectors() []prometheus.Collector {
@@ -104,8 +143,6 @@ func (c *RunnersCollector) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *RunnersCollector) Collect(ch chan<- prometheus.Metric) {
-	c.scrapeRunners()
-
 	for _, collector := range c.collectors() {
 		collector.Collect(ch)
 	}

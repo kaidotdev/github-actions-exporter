@@ -27,19 +27,20 @@ const (
 )
 
 type MonitorSettings struct {
-	Address              string
-	MaxConnections       int64
-	JaegerEndpoint       string
-	EnableProfiling      bool
-	EnableTracing        bool
-	TracingSampleRate    float64
-	KeepAlived           bool
-	ReUsePort            bool
-	TCPKeepAliveInterval time.Duration
-	HTTPClient           IHTTPClient
-	Logger               ILogger
-	Repository           string
-	Token                string
+	Address               string
+	MaxConnections        int64
+	JaegerEndpoint        string
+	EnableProfiling       bool
+	EnableTracing         bool
+	TracingSampleRate     float64
+	KeepAlived            bool
+	ReUsePort             bool
+	TCPKeepAliveInterval  time.Duration
+	CollectorLoopInterval time.Duration
+	HTTPClient            IHTTPClient
+	Logger                ILogger
+	Repository            string
+	Token                 string
 }
 
 type Monitor struct {
@@ -54,13 +55,23 @@ func NewMonitor(settings MonitorSettings) (*Monitor, error) {
 	registry := prometheus.NewRegistry()
 	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
 	registry.MustRegister(prometheus.NewGoCollector())
-	outdatedImageCollector := collector.NewRunsCollector(
+	ctx := context.Background()
+	runsCollector := collector.NewRunsCollector(
 		settings.Repository,
 		settings.Token,
 		settings.Logger,
 		settings.HTTPClient,
 	)
-	registry.MustRegister(outdatedImageCollector)
+	registry.MustRegister(runsCollector)
+	runsCollector.StartLoop(ctx, settings.CollectorLoopInterval)
+	runnersCollector := collector.NewRunnersCollector(
+		settings.Repository,
+		settings.Token,
+		settings.Logger,
+		settings.HTTPClient,
+	)
+	registry.MustRegister(runnersCollector)
+	runnersCollector.StartLoop(ctx, settings.CollectorLoopInterval)
 
 	prometheusExporter, err := ocprom.NewExporter(ocprom.Options{Registry: registry})
 	if err != nil {
