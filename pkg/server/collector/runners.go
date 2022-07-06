@@ -30,8 +30,8 @@ type Runner struct {
 }
 
 type RunnersResponse struct {
-	TotalCount int      `json:"total_count"`
-	Runners    []Runner `json:"runners"`
+	TotalCount *int     `json:"total_count,omitempty"`
+	Runners    []Runner `json:"runners,omitempty"`
 }
 
 type RunnersCollector struct {
@@ -82,8 +82,11 @@ func (c *RunnersCollector) fetchRunners(page int) ([]Runner, error) {
 	if err := json.Unmarshal(body, &runnersResponse); err != nil {
 		return nil, xerrors.Errorf("failed to parse response: %w", err)
 	}
+	if runnersResponse.TotalCount == nil {
+		return nil, xerrors.Errorf("bad response: %s", string(body))
+	}
 
-	if runnersResponse.TotalCount > runnersPerPage*page {
+	if *runnersResponse.TotalCount > runnersPerPage*page {
 		runners, err := c.fetchRunners(page + 1)
 		if err != nil {
 			return nil, xerrors.Errorf("failed to execute fetchRunners: %w", err)

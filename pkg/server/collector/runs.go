@@ -26,8 +26,8 @@ var (
 )
 
 type WorkflowRunsResponse struct {
-	TotalCount   int               `json:"total_count"`
-	WorkflowRuns []json.RawMessage `json:"workflow_runs"`
+	TotalCount   *int              `json:"total_count,omitempty"`
+	WorkflowRuns []json.RawMessage `json:"workflow_runs,omitempty"`
 }
 
 type RunsCollector struct {
@@ -57,26 +57,30 @@ func NewRunsCollector(
 	}
 }
 
-func (c *RunsCollector) fetchRunsCount(status string) (int, error) {
+func (c *RunsCollector) fetchRunsCount(status string) (*int, error) {
 	request, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/runs?status=%s", c.repository, status), nil)
 	if err != nil {
-		return 0, xerrors.Errorf("failed to create request object: %w", err)
+		return nil, xerrors.Errorf("failed to create request object: %w", err)
 	}
 	request.Header.Set("Authorization", fmt.Sprintf("token %s", c.token))
 	response, err := c.httpClient.Do(request)
 	if err != nil {
-		return 0, xerrors.Errorf("failed to request: %w", err)
+		return nil, xerrors.Errorf("failed to request: %w", err)
 	}
 	defer response.Body.Close()
 
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return 0, xerrors.Errorf("failed to read response: %w", err)
+		return nil, xerrors.Errorf("failed to read response: %w", err)
 	}
 
 	var workflowRunsResponse WorkflowRunsResponse
 	if err := json.Unmarshal(body, &workflowRunsResponse); err != nil {
-		return 0, xerrors.Errorf("failed to parse response: %w", err)
+		return nil, xerrors.Errorf("failed to parse response: %w", err)
+	}
+
+	if workflowRunsResponse.TotalCount == nil {
+		return nil, xerrors.Errorf("bad response: %s", string(body))
 	}
 
 	return workflowRunsResponse.TotalCount, nil
@@ -89,11 +93,13 @@ func (c *RunsCollector) scrapeRuns() {
 			c.logger.Errorf("Failed to fetch runs count: %s\n", err.Error())
 			return
 		}
-		labels := []string{
-			c.repository,
-			status,
+		if count != nil {
+			labels := []string{
+				c.repository,
+				status,
+			}
+			c.runs.WithLabelValues(labels...).Set(float64(*count))
 		}
-		c.runs.WithLabelValues(labels...).Set(float64(count))
 	}
 }
 

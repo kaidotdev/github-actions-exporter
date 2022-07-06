@@ -33,7 +33,7 @@ func DefaultArgs() *Args {
 		KeepAlived:               true,
 		ReUsePort:                false,
 		TCPKeepAliveInterval:     0,
-		CollectorLoopInterval:    60,
+		CollectorLoopInterval:    300,
 		Verbose:                  true,
 	}
 }
