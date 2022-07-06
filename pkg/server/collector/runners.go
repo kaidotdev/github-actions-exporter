@@ -62,7 +62,6 @@ func NewRunnersCollector(
 }
 
 func (c *RunnersCollector) fetchRunners(page int) ([]Runner, error) {
-	fmt.Printf("page: %d\n", page)
 	request, err := http.NewRequest("GET", fmt.Sprintf("https://api.github.com/repos/%s/actions/runners?per_page=%d&page=%d", c.repository, runnersPerPage, page), nil)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to create request object: %w", err)

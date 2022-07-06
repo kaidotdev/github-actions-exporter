@@ -34,7 +34,7 @@ func NewInstance() *Instance {
 					Base: &http.Transport{
 						Proxy: http.ProxyFromEnvironment,
 						DialContext: (&net.Dialer{
-							Timeout:   1 * time.Second,
+							Timeout:   3 * time.Second,
 							KeepAlive: 10 * time.Second,
 						}).DialContext,
 						DisableKeepAlives:     false,
