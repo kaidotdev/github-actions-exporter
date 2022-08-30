@@ -3,37 +3,41 @@ package server
 import "math"
 
 type Args struct {
-	APIAddress               string
-	APIMaxConnections        int64
-	MonitorAddress           string
-	MonitorMaxConnections    int64
-	MonitoringJaegerEndpoint string
-	EnableProfiling          bool
-	EnableTracing            bool
-	TracingSampleRate        float64
-	KeepAlived               bool
-	ReUsePort                bool
-	TCPKeepAliveInterval     int64
-	Verbose                  bool
-	Repository               string
-	CollectorLoopInterval    int64
-	Token                    string
+	APIAddress                     string
+	APIMaxConnections              int64
+	MonitorAddress                 string
+	MonitorMaxConnections          int64
+	MonitoringJaegerEndpoint       string
+	EnableProfiling                bool
+	EnableTracing                  bool
+	TracingSampleRate              float64
+	KeepAlived                     bool
+	ReUsePort                      bool
+	TCPKeepAliveInterval           int64
+	Verbose                        bool
+	Repository                     string
+	RunsCollectorLoopInterval      int64
+	RunnersCollectorLoopInterval   int64
+	WorkflowsCollectorLoopInterval int64
+	Token                          string
 }
 
 func DefaultArgs() *Args {
 	return &Args{
-		APIAddress:               "127.0.0.1:8000",
-		APIMaxConnections:        math.MaxInt64,
-		MonitorAddress:           "127.0.0.1:9090",
-		MonitorMaxConnections:    math.MaxInt64,
-		MonitoringJaegerEndpoint: "jaeger-agent.istio-system.svc.cluster.local:6831",
-		EnableProfiling:          false,
-		EnableTracing:            false,
-		TracingSampleRate:        0,
-		KeepAlived:               true,
-		ReUsePort:                false,
-		TCPKeepAliveInterval:     0,
-		CollectorLoopInterval:    300,
-		Verbose:                  true,
+		APIAddress:                     "127.0.0.1:8000",
+		APIMaxConnections:              math.MaxInt64,
+		MonitorAddress:                 "127.0.0.1:9090",
+		MonitorMaxConnections:          math.MaxInt64,
+		MonitoringJaegerEndpoint:       "jaeger-agent.istio-system.svc.cluster.local:6831",
+		EnableProfiling:                false,
+		EnableTracing:                  false,
+		TracingSampleRate:              0,
+		KeepAlived:                     true,
+		ReUsePort:                      false,
+		TCPKeepAliveInterval:           0,
+		RunsCollectorLoopInterval:      300,
+		RunnersCollectorLoopInterval:   300,
+		WorkflowsCollectorLoopInterval: 3600,
+		Verbose:                        true,
 	}
 }

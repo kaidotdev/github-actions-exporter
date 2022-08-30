@@ -29,12 +29,12 @@ func NewInstance() *Instance {
 				RetryCount: 3,
 			},
 			Inner: &http.Client{
-				Timeout: 3 * time.Second,
+				Timeout: 10 * time.Second,
 				Transport: &ochttp.Transport{
 					Base: &http.Transport{
 						Proxy: http.ProxyFromEnvironment,
 						DialContext: (&net.Dialer{
-							Timeout:   3 * time.Second,
+							Timeout:   10 * time.Second,
 							KeepAlive: 10 * time.Second,
 						}).DialContext,
 						DisableKeepAlives:     false,

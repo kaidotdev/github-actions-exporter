@@ -27,20 +27,22 @@ const (
 )
 
 type MonitorSettings struct {
-	Address               string
-	MaxConnections        int64
-	JaegerEndpoint        string
-	EnableProfiling       bool
-	EnableTracing         bool
-	TracingSampleRate     float64
-	KeepAlived            bool
-	ReUsePort             bool
-	TCPKeepAliveInterval  time.Duration
-	CollectorLoopInterval time.Duration
-	HTTPClient            IHTTPClient
-	Logger                ILogger
-	Repository            string
-	Token                 string
+	Address                        string
+	MaxConnections                 int64
+	JaegerEndpoint                 string
+	EnableProfiling                bool
+	EnableTracing                  bool
+	TracingSampleRate              float64
+	KeepAlived                     bool
+	ReUsePort                      bool
+	TCPKeepAliveInterval           time.Duration
+	RunsCollectorLoopInterval      time.Duration
+	RunnersCollectorLoopInterval   time.Duration
+	WorkflowsCollectorLoopInterval time.Duration
+	HTTPClient                     IHTTPClient
+	Logger                         ILogger
+	Repository                     string
+	Token                          string
 }
 
 type Monitor struct {
@@ -63,7 +65,7 @@ func NewMonitor(settings MonitorSettings) (*Monitor, error) {
 		settings.HTTPClient,
 	)
 	registry.MustRegister(runsCollector)
-	runsCollector.StartLoop(ctx, settings.CollectorLoopInterval)
+	runsCollector.StartLoop(ctx, settings.RunsCollectorLoopInterval)
 	runnersCollector := collector.NewRunnersCollector(
 		settings.Repository,
 		settings.Token,
@@ -71,7 +73,15 @@ func NewMonitor(settings MonitorSettings) (*Monitor, error) {
 		settings.HTTPClient,
 	)
 	registry.MustRegister(runnersCollector)
-	runnersCollector.StartLoop(ctx, settings.CollectorLoopInterval)
+	runnersCollector.StartLoop(ctx, settings.RunnersCollectorLoopInterval)
+	workflowsCollector := collector.NewWorkflowsCollector(
+		settings.Repository,
+		settings.Token,
+		settings.Logger,
+		settings.HTTPClient,
+	)
+	registry.MustRegister(workflowsCollector)
+	workflowsCollector.StartLoop(ctx, settings.WorkflowsCollectorLoopInterval)
 
 	prometheusExporter, err := ocprom.NewExporter(ocprom.Options{Registry: registry})
 	if err != nil {
